@@ -1,0 +1,14 @@
+# ignore FreePascal IDE files
+/freepascal/**/fp.*
+/freepascal/**/fp*.err
+/freepascal/**/fp*.out
+
+# ignore backup and object files
+/freepascal/**/*.bak
+/freepascal/**/*.o
+
+# ignore the bin directories
+/freepascal/**/bin/
+
+# ignore sqlite db files
+/freepascal/**/*.db
