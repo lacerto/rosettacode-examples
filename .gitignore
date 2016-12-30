@@ -12,3 +12,6 @@
 
 # ignore sqlite db files
 /freepascal/**/*.db
+
+#ignore bin directories
+/c/**/bin
