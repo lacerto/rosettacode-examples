@@ -50,12 +50,50 @@ int main(void) {
     result_code = sqlite3_exec(db, sql, select_callback, NULL, NULL);
     check_error(result_code, db);    
     
+    // Prepare the parametrized SQL statement to update player #99.
+    sql = "update players set name=?, score=?, active=? where jerseyNum=?;";
+    result_code = sqlite3_prepare_v2(db, sql, -1, &compiled_statement, NULL);
+    check_error(result_code, db);    
+    
+    // Bind the values to the parameters (see https://sqlite.org/c3ref/bind_blob.html).
+    result_code = sqlite3_bind_text(compiled_statement, 1, "Smith, Steve", -1, NULL);
+    check_error(result_code, db);    
+    result_code = sqlite3_bind_double(compiled_statement, 2, 42);
+    check_error(result_code, db);    
+    result_code = sqlite3_bind_int(compiled_statement, 3, 1);
+    check_error(result_code, db);    
+    result_code = sqlite3_bind_int(compiled_statement, 4, 99);
+    check_error(result_code, db);    
+    
+    // Evaluate the prepared SQL statement.
+    result_code = sqlite3_step(compiled_statement);
+    if (result_code != SQLITE_DONE) {
+        printf("Error #%d: %s\n", result_code, sqlite3_errmsg(db));
+        sqlite3_close(db);
+        return result_code;
+    }
+    
+    // Destroy the prepared statement object.
+    result_code = sqlite3_finalize(compiled_statement);
+    check_error(result_code, db);        
+
+    // Display the contents of the players table.
+    printf("After update:\n");
+    sql = "select * from players;";
+    result_code = sqlite3_exec(db, sql, select_callback, NULL, NULL);
+    check_error(result_code, db);
+    
     // Close the database connection.
     sqlite3_close(db);        
         
     return EXIT_SUCCESS;
 }
 
+/*
+  Checks the result code from an SQLite operation.
+  If it contains an error code then this function prints the error message,
+  closes the database and exits. }
+*/
 void check_error(int result_code, sqlite3 *db) {
     if (result_code != SQLITE_OK) {
         printf("Error #%d: %s\n", result_code, sqlite3_errmsg(db));
@@ -64,6 +102,7 @@ void check_error(int result_code, sqlite3 *db) {
     }
 }
 
+/* This callback function prints the results of the select statement. */
 int select_callback(void* data, int column_count, char** columns, char** column_names) {
     int i;
     
