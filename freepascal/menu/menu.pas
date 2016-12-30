@@ -1,4 +1,5 @@
 program Menu;
+{$ASSERTIONS ON}
 uses
   objects;
 var
@@ -11,6 +12,13 @@ var
   code   :word;
   choice :string;
 begin
+  // Return empty string if the collection is empty.
+  if MenuItems^.Count = 0 then
+  begin
+    SelectMenuItem := '';
+    Exit;
+  end;
+
   repeat
     for i:=0 to MenuItems^.Count-1 do
     begin
@@ -39,6 +47,15 @@ begin
   // Display the menu and get user input.
   selected := SelectMenuItem(MenuItems);
   writeln('You chose: ', selected);
+
+  dispose(MenuItems, Done);
+
+  // Test function with an empty collection.
+  MenuItems := new(PUnSortedStrCollection, Init(10, 10));
+
+  selected := SelectMenuItem(MenuItems);
+  // Assert that the function returns an empty string.
+  assert(selected = '', 'Assertion failed: the function did not return an empty string.');
 
   dispose(MenuItems, Done);
 end.
