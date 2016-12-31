@@ -1,3 +1,6 @@
+####
+# FreePascal
+
 # ignore FreePascal IDE files
 /freepascal/**/fp.*
 /freepascal/**/fp*.err
@@ -13,5 +16,13 @@
 # ignore sqlite db files
 /freepascal/**/*.db
 
+####
+# C
+
 #ignore bin directories
-/c/**/bin
+/c/**/bin/
+
+####
+# 6510 assembly
+
+/6510asm/**/bin/
