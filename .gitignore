@@ -1,4 +1,7 @@
 ####
+
+*.swp
+
 # FreePascal
 
 # ignore FreePascal IDE files
