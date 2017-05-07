@@ -15,14 +15,15 @@ strout      = $ab1e
 
             *=$033c             ; sys828 tbuffer ($033c-$03fb)
 
-            jsr chkcom
-            jsr frmnum
-            jsr getadr
-            jsr dec2bin
-            lda #<binstr
-            ldy #>binstr
-            jsr skiplz
-            jsr strout
+            jsr chkcom          ; check for and skip comma
+            jsr frmnum          ; evaluate numeric expression
+            jsr getadr          ; convert floating point number to two-byte int
+            jsr dec2bin         ; convert two-byte int to binary string
+            lda #<binstr        ; load the address of the binary string - low
+            ldy #>binstr        ; high byte
+            jsr skiplz          ; skip leading zeros, return an address in a/y
+                                ;   that points to the first "1" 
+            jsr strout          ; print the result
             rts
 
 ; *** subroutines ****
@@ -30,59 +31,60 @@ strout      = $ab1e
 ; Converts a 16 bit integer to a binary string.
 ; Input: y - low byte of the integer
 ;        a - high byte of the integer
-; Output: a string stored at 'binstr'
-dec2bin     sty declow
+; Output: a 16 byte string stored at 'binstr'
+dec2bin     sty declow          ; store the two-byte integer
             sta dechigh
-            lda #<binstr
+            lda #<binstr        ; store the binary string address on the zero page
             sta binstrptr
             lda #>binstr
             sta binstrptr+1
-            ldx #$01
-wordloop    ldy #$00
-byteloop    asl declow,x
-            bcs one
-            lda #"0"
+            ldx #$01            ; start conversion with the high byte
+wordloop    ldy #$00            ; bit counter
+byteloop    asl declow,x        ; shift left, bit 7 is shifted into carry
+            bcs one             ; carry set? jump
+            lda #"0"            ; a="0"
             bne writebit
-one         lda #"1"
-writebit    sta (binstrptr),y
-            iny
-            cpy #$08
-            bne byteloop
-            clc
-            lda #$08
-            adc binstrptr
+one         lda #"1"            ; a="1"
+writebit    sta (binstrptr),y   ; write the digit to the string
+            iny                 ; y++
+            cpy #$08            ; y==8 all bits converted?
+            bne byteloop        ;   no -> convert next bit
+            clc                 ; clear carry
+            lda #$08            ; a=8
+            adc binstrptr       ; add 8 to the string address pointer
             sta binstrptr
-            bcc nooverflow
-            inc binstrptr+1
-nooverflow  dex
-            bpl wordloop
-            rts
+            bcc nooverflow      ; address low byte did overflow?
+            inc binstrptr+1     ;   yes -> increase the high byte
+nooverflow  dex                 ; x--
+            bpl wordloop        ; x<0? no -> convert the low byte
+            rts                 ;   yes -> conversion finished, return
 
 ; Skip leading zeros.
 ; Input:  a - low byte of the byte string address
 ;         y - high byte -"-
-; Output: a - low byte of string start without leading zeros
+; Output: a - low byte of string start address without leading zeros
 ;         y - high byte -"-
-skiplz      sta binstrptr
+skiplz      sta binstrptr       ; store the binary string address on the zero page
             sty binstrptr+1
-            ldy #$00
-skiploop    lda (binstrptr),y
-            iny
-            cpy #$11
-            beq endreached
-            cmp #"1"
-            bne skiploop
-            beq add2ptr
-endreached  dey
+            ldy #$00            ; byte counter
+skiploop    lda (binstrptr),y   ; load a byte from the string
+            iny                 ; y++
+            cpy #$11            ; y==17
+            beq endreached      ;   yes -> end of string reached without a "1"
+            cmp #"1"            ; a=="1"
+            bne skiploop        ;   no -> take the next byte
+            beq add2ptr         ;   yes -> jump
+endreached  dey                 ; move the pointer to the last 0
 add2ptr     clc
             dey
-            tya
-            adc binstrptr
-            bcc loadhigh
-            inc binstrptr+1
+            tya                 ; a=y
+            adc binstrptr       ; move the pointer to the first "1" in the string
+            bcc loadhigh        ; overflow?
+            inc binstrptr+1     ;  yes -> increase high byte
 loadhigh    ldy binstrptr+1
             rts
 
 ; *** data ***
 
-binstr      .repeat 17, $00
+binstr      .repeat 16, $00     ; reserve 16 bytes for the binary digits
+            .byte $0d, $00      ; newline + null terminator
